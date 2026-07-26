@@ -1,0 +1,45 @@
+{
+  "commands": {
+    "bootstrap": [],
+    "test": [
+      {
+        "argv": [
+          "uv",
+          "run",
+          "pytest"
+        ]
+      }
+    ],
+    "verification": [
+      {
+        "argv": [
+          "uv",
+          "run",
+          "ruff",
+          "check",
+          "."
+        ]
+      }
+    ]
+  },
+  "execution": {
+    "hostFinalizationReserveMinutes": 15
+  },
+  "models": {
+    "finalFix": "gpt-5.6-sol",
+    "finalReview": "gpt-5.6-sol",
+    "ticket": "gpt-5.6-sol"
+  },
+  "queue": {
+    "ownershipLabel": "sandcastle",
+    "readyLabel": "ready-for-agent"
+  },
+  "repository": {
+    "baseBranch": "main",
+    "integrationBranch": "sandcastle/integration"
+  },
+  "runner": {
+    "runsOn": "ubuntu-latest"
+  },
+  "schemaVersion": 1
+}
