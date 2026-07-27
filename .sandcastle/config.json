@@ -6,6 +6,16 @@
         "argv": [
           "uv",
           "run",
+          "playwright",
+          "install",
+          "--with-deps",
+          "chromium"
+        ]
+      },
+      {
+        "argv": [
+          "uv",
+          "run",
           "pytest"
         ]
       }
