@@ -21,6 +21,29 @@ export function executionCredentialValues(
     .map(([, value]) => value!);
 }
 
+export function redactExecutionCredentials(
+  value: string,
+  environment: NodeJS.ProcessEnv,
+): string {
+  const credentialValues = [
+    ...new Set(
+      executionCredentialValues(environment).filter(
+        (credentialValue) => credentialValue.length > 0,
+      ),
+    ),
+  ].sort((left, right) => right.length - left.length);
+  if (credentialValues.length === 0) return value;
+  const pattern = new RegExp(
+    credentialValues
+      .map((credentialValue) =>
+        credentialValue.replace(/[\\^$.*+?()[\]{}|]/gu, "\\$&"),
+      )
+      .join("|"),
+    "gu",
+  );
+  return value.replace(pattern, "<redacted>");
+}
+
 export function withoutExecutionCredentials(
   environment: NodeJS.ProcessEnv,
 ): NodeJS.ProcessEnv {

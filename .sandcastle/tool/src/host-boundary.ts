@@ -4,7 +4,10 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { promisify } from "node:util";
 
-import { withoutExecutionCredentials } from "./credential-environment.js";
+import {
+  redactExecutionCredentials,
+  withoutExecutionCredentials,
+} from "./credential-environment.js";
 import type { FinalFixBoundary } from "./final-fix.js";
 import type { FinalRereviewBoundary } from "./final-rereview.js";
 import type { FinalReviewBoundary } from "./final-review.js";
@@ -26,6 +29,37 @@ import {
 import type { TicketHostBoundary } from "./processing-run.js";
 
 const executeFile = promisify(execFile);
+
+function projectCommandFailure(
+  argv: string[],
+  environment: NodeJS.ProcessEnv,
+  error: unknown,
+): Error {
+  const failure =
+    typeof error === "object" && error !== null
+      ? (error as { code?: unknown; stderr?: unknown; stdout?: unknown })
+      : {};
+  const exitCode =
+    typeof failure.code === "number" || typeof failure.code === "string"
+      ? String(failure.code)
+      : "unknown";
+  const stdout =
+    typeof failure.stdout === "string" && failure.stdout.length > 0
+      ? failure.stdout.trimEnd()
+      : "<empty>";
+  const stderr =
+    typeof failure.stderr === "string" && failure.stderr.length > 0
+      ? failure.stderr.trimEnd()
+      : "<empty>";
+  const diagnostic = [
+    "A configured project command failed.",
+    `Command: ${JSON.stringify(argv)}`,
+    `Exit code: ${exitCode}`,
+    `stdout: ${stdout}`,
+    `stderr: ${stderr}`,
+  ].join("\n");
+  return new Error(redactExecutionCredentials(diagnostic, environment));
+}
 
 function gitEnvironment(
   environment: NodeJS.ProcessEnv,
@@ -385,8 +419,8 @@ export class NodeIntegrationHost implements TicketHostBoundary, FinalFixBoundary
         maxBuffer: 16 * 1024 * 1024,
         signal,
       });
-    } catch {
-      throw new Error("A configured project command failed.");
+    } catch (error) {
+      throw projectCommandFailure(argv, environment, error);
     }
   }
 }
@@ -629,8 +663,8 @@ export class NodeFinalReviewHost
         env: environment,
         maxBuffer: 16 * 1024 * 1024,
       });
-    } catch {
-      throw new Error("A configured project command failed.");
+    } catch (error) {
+      throw projectCommandFailure(argv, environment, error);
     }
   }
 
