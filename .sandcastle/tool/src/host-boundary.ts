@@ -360,7 +360,11 @@ export class NodeIntegrationHost implements TicketHostBoundary, FinalFixBoundary
   }
 
   async isClean(): Promise<boolean> {
-    return (await this.#git(["status", "--porcelain=v1", "--untracked-files=all"])) === "";
+    return (await this.worktreeStatus()) === "";
+  }
+
+  worktreeStatus(): Promise<string> {
+    return this.#git(["status", "--porcelain=v1", "--untracked-files=all"]);
   }
 
   listIntegrationPullRequests(input: {

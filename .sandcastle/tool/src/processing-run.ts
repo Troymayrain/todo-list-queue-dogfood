@@ -2,7 +2,10 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { withoutExecutionCredentials } from "./credential-environment.js";
+import {
+  redactExecutionCredentials,
+  withoutExecutionCredentials,
+} from "./credential-environment.js";
 import type { DeadlineLifecycle } from "./deadline.js";
 import {
   ensureIntegrationPullRequest,
@@ -53,6 +56,7 @@ export interface TicketHostBoundary {
     environment: NodeJS.ProcessEnv,
     signal?: AbortSignal,
   ): Promise<void>;
+  worktreeStatus(): Promise<string>;
 }
 
 export interface ProcessingRunOptions {
@@ -146,21 +150,45 @@ function validateAgentCompletion(
   afterHead: string,
   parents: string[],
   workUnit: WorkUnitResult,
-  clean: boolean,
+  worktreeStatus: string,
+  environment: NodeJS.ProcessEnv,
 ): void {
-  if (
-    !objectIdPattern.test(afterHead) ||
-    afterHead === beforeHead ||
-    workUnit.commits.length !== 1 ||
-    workUnit.commits[0] !== afterHead ||
-    parents.length !== 1 ||
-    parents[0] !== beforeHead ||
-    !clean
-  ) {
-    throw new Error(
-      "Ticket completion must be one clean, attributable commit parented by before_head.",
-    );
+  const failedConditions: string[] = [];
+  if (!objectIdPattern.test(afterHead)) failedConditions.push("invalid-after-head");
+  if (afterHead === beforeHead) failedConditions.push("no-agent-progress");
+  if (workUnit.commits.length !== 1) {
+    failedConditions.push("agent-commit-count");
   }
+  if (workUnit.commits[0] !== afterHead) {
+    failedConditions.push("agent-commit-head-mismatch");
+  }
+  if (parents.length !== 1) failedConditions.push("parent-count");
+  if (parents[0] !== beforeHead) {
+    failedConditions.push("parent-before-head-mismatch");
+  }
+  if (worktreeStatus !== "") failedConditions.push("worktree-not-clean");
+  if (failedConditions.length === 0) return;
+
+  const redactedStatus = redactExecutionCredentials(worktreeStatus, environment);
+  const maxStatusLength = 8_192;
+  const boundedStatus =
+    redactedStatus.length <= maxStatusLength
+      ? redactedStatus
+      : `${redactedStatus.slice(0, maxStatusLength)}<truncated>`;
+  const diagnostic = redactExecutionCredentials(
+    JSON.stringify({
+      before_head: beforeHead,
+      after_head: afterHead,
+      agent_commits: workUnit.commits,
+      parents,
+      worktree_status: boundedStatus,
+      failed_conditions: failedConditions,
+    }),
+    environment,
+  );
+  throw new Error(
+    `Ticket completion must be one clean, attributable commit parented by before_head. Diagnostic: ${diagnostic}`,
+  );
 }
 
 export async function executeProcessingRun(
@@ -209,11 +237,18 @@ export async function executeProcessingRun(
   );
 
   const afterHead = await boundary.localHead();
-  const [parents, clean] = await Promise.all([
+  const [parents, worktreeStatus] = await Promise.all([
     boundary.commitParents(afterHead),
-    boundary.isClean(),
+    boundary.worktreeStatus(),
   ]);
-  validateAgentCompletion(beforeHead, afterHead, parents, workUnit, clean);
+  validateAgentCompletion(
+    beforeHead,
+    afterHead,
+    parents,
+    workUnit,
+    worktreeStatus,
+    options.environment,
+  );
   if (options.lifecycle?.signal.aborted) {
     throw new Error("Ticket deadline reached before Host finalization.");
   }

@@ -272,6 +272,10 @@ class StatefulQueueFake {
     return true;
   }
 
+  async worktreeStatus() {
+    return "";
+  }
+
   async listIntegrationPullRequests(input) {
     this.events.push(["listPr", input]);
     return this.pullRequest ? [structuredClone(this.pullRequest)] : [];

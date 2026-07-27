@@ -95,6 +95,10 @@ function successfulBoundary(events, overrides = {}, initialIntegrationHead = nul
     async runCommand(argv, environment) {
       events.push(["command", argv, environment]);
     },
+    async worktreeStatus() {
+      events.push(["worktreeStatus"]);
+      return "";
+    },
     ...overrides,
   };
 }
@@ -289,6 +293,64 @@ test("invalid completion proof or project-command failure never reaches publicat
       scenario.name,
     );
   }
+});
+
+test("invalid Agent completion reports bounded credential-safe proof diagnostics", async () => {
+  const root = mkdtempSync(join(tmpdir(), "queue-ticket-diagnostic-"));
+  const events = [];
+  const diagnosticSecret = "diagnostic-[secret].value$";
+  const runOptions = options(root);
+  runOptions.environment.DIAGNOSTIC_SECRET = diagnosticSecret;
+  const afterHead = "b".repeat(40);
+  const extraCommit = `untrusted-${diagnosticSecret}`;
+  const extraParent = "4".repeat(40);
+  const boundary = successfulBoundary(events, {
+    async commitParents(commit) {
+      events.push(["parents", commit]);
+      return [baseHead, extraParent];
+    },
+    async isClean() {
+      events.push(["clean"]);
+      return false;
+    },
+    async localHead() {
+      events.push(["localHead"]);
+      return afterHead;
+    },
+    async worktreeStatus() {
+      events.push(["worktreeStatus"]);
+      return `?? ${diagnosticSecret}-${"x".repeat(9_000)}.txt`;
+    },
+  });
+
+  let failure;
+  try {
+    await executeProcessingRun(
+      runOptions,
+      boundary,
+      successfulWorkUnit(events, { commits: [agentCommit, extraCommit] }),
+    );
+  } catch (error) {
+    failure = error;
+  }
+
+  assert.ok(failure instanceof Error);
+  assert.match(failure.message, /"before_head":"1{40}"/u);
+  assert.match(failure.message, /"after_head":"b{40}"/u);
+  assert.match(
+    failure.message,
+    /"agent_commits":\["a{40}","untrusted-<redacted>"\]/u,
+  );
+  assert.match(failure.message, /"parents":\["1{40}","4{40}"\]/u);
+  assert.match(failure.message, /"worktree_status":"\?\? <redacted>-/u);
+  assert.match(failure.message, /"failed_conditions":\[/u);
+  assert.match(failure.message, /"agent-commit-count"/u);
+  assert.match(failure.message, /"agent-commit-head-mismatch"/u);
+  assert.match(failure.message, /"parent-count"/u);
+  assert.match(failure.message, /"worktree-not-clean"/u);
+  assert.match(failure.message, /<truncated>/u);
+  assert.doesNotMatch(failure.message, new RegExp(diagnosticSecret, "u"));
+  assert.ok(failure.message.length < 10_000);
 });
 
 test("an existing unique open draft Integration PR is reused", async () => {
