@@ -1,4 +1,5 @@
 <form id="task-form" method="post" action="/tasks" hx-post="/tasks" hx-target="#task-list" hx-swap="innerHTML" hx-on::after-request="if(event.detail.successful) this.reset()" class="mt-4" novalidate>
+  <input type="hidden" name="filter" value="{{ current_filter }}">
   <label for="task-title" class="block text-sm font-medium text-slate-800">Task Title</label>
   <div class="mt-2 flex flex-col gap-3 sm:flex-row">
     <input

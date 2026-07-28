@@ -22,6 +22,8 @@ def test_complete_restore_filter_persistence_and_stable_order(page: Page) -> Non
     complete = page.get_by_role("button", name="Mark Second Task as Completed")
     complete.focus()
     complete.press("Enter")
+    restore = page.get_by_role("button", name="Restore Second Task to Active")
+    expect(restore).to_be_focused()
     expect(page.locator('[data-task-status="Completed"] [data-task-title]')).to_have_text(
         "Second Task"
     )
@@ -34,22 +36,24 @@ def test_complete_restore_filter_persistence_and_stable_order(page: Page) -> Non
     expect(task_titles(page)).to_have_text(["Third Task", "Second Task", "First Task"])
 
     page.get_by_role("link", name="Active", exact=True).press("Enter")
-    expect(page.get_by_role("link", name="Active", exact=True)).to_have_attribute(
-        "aria-current", "page"
-    )
+    active_filter = page.get_by_role("link", name="Active", exact=True)
+    expect(active_filter).to_have_attribute("aria-current", "page")
+    expect(active_filter).to_be_focused()
     expect(task_titles(page)).to_have_text(["Third Task", "First Task"])
 
     page.get_by_role("link", name="Completed", exact=True).click()
-    expect(page.get_by_role("link", name="Completed", exact=True)).to_have_attribute(
-        "aria-current", "page"
-    )
+    completed_filter = page.get_by_role("link", name="Completed", exact=True)
+    expect(completed_filter).to_have_attribute("aria-current", "page")
+    expect(completed_filter).to_be_focused()
     expect(task_titles(page)).to_have_text(["Second Task"])
     page.reload()
     expect(page).to_have_url(page.url.split("?")[0] + "?filter=completed")
     expect(task_titles(page)).to_have_text(["Second Task"])
 
     page.get_by_role("button", name="Restore Second Task to Active").press("Enter")
+    empty_state = page.locator("[data-task-list-status]")
     expect(page.get_by_text("No Completed Tasks")).to_be_visible()
+    expect(empty_state).to_be_focused()
     expect(page).to_have_url(page.url.split("?")[0] + "?filter=completed")
 
     page.get_by_role("link", name="All", exact=True).click()
@@ -71,6 +75,33 @@ def test_filter_specific_empty_states_and_unknown_filter_fallback(
         "aria-current", "page"
     )
     expect(page.get_by_text("Your Task List is empty")).to_be_visible()
+
+
+def test_create_task_preserves_active_filter(page: Page) -> None:
+    add_task(page, "Existing Task")
+    page.get_by_role("button", name="Mark Existing Task as Completed").click()
+    page.get_by_role("link", name="Completed", exact=True).click()
+
+    page.get_by_label("Task Title").fill("New Active Task")
+    page.get_by_role("button", name="Add Task").click()
+
+    expect(page).to_have_url(page.url.split("?")[0] + "?filter=completed")
+    expect(page.get_by_role("link", name="Completed", exact=True)).to_have_attribute(
+        "aria-current", "page"
+    )
+    expect(task_titles(page)).to_have_text(["Existing Task"])
+
+
+def test_standard_create_preserves_filter_without_htmx(page: Page) -> None:
+    page.get_by_role("link", name="Active", exact=True).click()
+    page.evaluate("window.htmx = undefined")
+    page.locator("script[src*='htmx']").evaluate("element => element.remove()")
+
+    page.get_by_label("Task Title").fill("Standard Create Task")
+    page.get_by_role("button", name="Add Task").click()
+
+    expect(page).to_have_url(page.url.split("?")[0] + "?filter=active")
+    expect(task_titles(page)).to_have_text(["Standard Create Task"])
 
 
 def test_standard_status_form_preserves_filter_without_htmx(page: Page) -> None:

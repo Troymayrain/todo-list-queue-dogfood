@@ -55,6 +55,10 @@ def render_task_list(
     status_code: int = 200,
     notice: str | None = None,
     include_filters: bool = False,
+    focus_filter: bool = False,
+    focus_status_task_id: int | None = None,
+    focus_delete_task_id: int | None = None,
+    focus_list: bool = False,
 ) -> HTMLResponse:
     task_filter = normalize_filter(task_filter)
     response = templates.TemplateResponse(
@@ -64,6 +68,10 @@ def render_task_list(
             "tasks": filtered_tasks(task_filter),
             "current_filter": task_filter,
             "notice": notice,
+            "focus_filter": focus_filter,
+            "focus_status_task_id": focus_status_task_id,
+            "focus_delete_task_id": focus_delete_task_id,
+            "focus_list": focus_list,
         },
         status_code=status_code,
     )
@@ -116,7 +124,12 @@ def render_missing_task(request: Request, task_filter: str = "all") -> HTMLRespo
 def index(request: Request, filter: str = "all") -> HTMLResponse:
     task_filter = normalize_filter(filter)
     if is_htmx(request):
-        return render_task_list(request, task_filter=task_filter, include_filters=True)
+        return render_task_list(
+            request,
+            task_filter=task_filter,
+            include_filters=True,
+            focus_filter=True,
+        )
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -169,14 +182,23 @@ def edit_task(request: Request, task_id: int, filter: str = "all") -> HTMLRespon
     task = get_task(task_id)
     if task is None:
         return render_missing_task(request, task_filter)
+    context = {
+        "task": task,
+        "edit_title_value": task["title"],
+        "edit_error": None,
+        "current_filter": task_filter,
+    }
+    if is_htmx(request):
+        return templates.TemplateResponse(request, "_task_edit.html", context)
     return templates.TemplateResponse(
         request,
-        "_task_edit.html",
+        "index.html",
         {
-            "task": task,
-            "title_value": task["title"],
+            **context,
+            "tasks": filtered_tasks(task_filter),
+            "title_value": "",
             "error": None,
-            "current_filter": task_filter,
+            "edit_task": task,
         },
     )
 
@@ -235,10 +257,25 @@ def remove_task(
     filter: str = Form("all"),
 ):
     task_filter = normalize_filter(filter)
+    tasks_before_delete = filtered_tasks(task_filter)
+    deleted_index = next(
+        (index for index, task in enumerate(tasks_before_delete) if task["id"] == task_id),
+        None,
+    )
     if not delete_task(task_id):
         return render_missing_task(request, task_filter)
     if is_htmx(request):
-        return render_task_list(request, task_filter=task_filter)
+        remaining_tasks = filtered_tasks(task_filter)
+        focus_task_id = None
+        if deleted_index is not None and remaining_tasks:
+            focus_index = min(deleted_index, len(remaining_tasks) - 1)
+            focus_task_id = remaining_tasks[focus_index]["id"]
+        return render_task_list(
+            request,
+            task_filter=task_filter,
+            focus_delete_task_id=focus_task_id,
+            focus_list=focus_task_id is None,
+        )
     return RedirectResponse(url=filter_url(task_filter), status_code=303)
 
 
@@ -255,16 +292,25 @@ def save_task_title(
         task = get_task(task_id)
         if task is None:
             return render_missing_task(request, task_filter)
+        context = {
+            "task": task,
+            "edit_title_value": title,
+            "edit_error": error,
+            "current_filter": task_filter,
+        }
+        if is_htmx(request):
+            return templates.TemplateResponse(request, "_task_edit.html", context)
         return templates.TemplateResponse(
             request,
-            "_task_edit.html",
+            "index.html",
             {
-                "task": task,
-                "title_value": title,
-                "error": error,
-                "current_filter": task_filter,
+                **context,
+                "tasks": filtered_tasks(task_filter),
+                "title_value": "",
+                "error": None,
+                "edit_task": task,
             },
-            status_code=200 if is_htmx(request) else 422,
+            status_code=422,
         )
 
     task = update_task_title(task_id, trimmed_title)
@@ -294,5 +340,11 @@ def save_task_status(
     if task is None:
         return render_missing_task(request, task_filter)
     if is_htmx(request):
-        return render_task_list(request, task_filter=task_filter)
+        task_is_visible = task_filter == "all" or FILTER_STATUSES.get(task_filter) == status
+        return render_task_list(
+            request,
+            task_filter=task_filter,
+            focus_status_task_id=task_id if task_is_visible else None,
+            focus_list=not task_is_visible,
+        )
     return RedirectResponse(url=filter_url(task_filter), status_code=303)

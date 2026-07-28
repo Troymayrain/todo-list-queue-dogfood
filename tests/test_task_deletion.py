@@ -44,6 +44,7 @@ def test_confirm_delete_removes_task_and_persists(page: Page, tmp_path: Path) ->
     page.get_by_role("button", name="Permanently delete Task to delete").press("Enter")
 
     expect(task_titles(page)).to_have_text(["Task that remains"])
+    expect(page.get_by_role("link", name="Delete Task that remains", exact=True)).to_be_focused()
     page.reload()
     expect(task_titles(page)).to_have_text(["Task that remains"])
     with sqlite3.connect(tmp_path / "tasks.sqlite3") as connection:
@@ -65,6 +66,7 @@ def test_delete_preserves_each_filter_and_shows_correct_empty_state(page: Page) 
     page.get_by_role("button", name="Permanently delete Active Task").click()
     expect(page).to_have_url(page.url.split("?")[0] + "?filter=active")
     expect(page.get_by_text("No Active Tasks")).to_be_visible()
+    expect(page.locator("[data-task-list-status]")).to_be_focused()
 
     page.get_by_role("link", name="Completed", exact=True).click()
     expect(page.get_by_role("link", name="Completed", exact=True)).to_have_attribute(

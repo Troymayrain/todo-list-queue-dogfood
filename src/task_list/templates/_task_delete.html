@@ -14,9 +14,9 @@
       </form>
       <a
         href="{% if current_filter == 'all' %}/{% else %}/?filter={{ current_filter }}{% endif %}"
-        hx-get="/tasks/{{ task.id }}?filter={{ current_filter }}&focus=delete"
+        hx-get="/tasks/{{ task.id }}?filter={{ current_filter }}&amp;focus=delete"
         hx-target="#task-{{ task.id }}"
-        hx-swap="outerHTML focus-scroll:#task-title-{{ task.id }}:focus"
+        hx-swap="outerHTML"
         class="min-h-11 rounded-lg px-5 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-300"
       >Cancel deletion</a>
     </div>
