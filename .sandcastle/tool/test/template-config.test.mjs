@@ -38,3 +38,12 @@ test("Ticket Agent must run the configured Host checks before committing", async
   assert.match(prompt, /全部通过后才能提交/u);
   assert.match(prompt, /不得.*削弱.*验收/u);
 });
+
+test("Queue tool build output cannot dirty the Host worktree", async () => {
+  const ignore = await readFile(
+    new URL("../../../.gitignore", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(ignore, /^\.sandcastle\/tool\/dist\/$/mu);
+});
