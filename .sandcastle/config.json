@@ -1,7 +1,6 @@
 {
   "commands": {
-    "bootstrap": [],
-    "test": [
+    "bootstrap": [
       {
         "argv": [
           "uv",
@@ -13,7 +12,9 @@
           "--with-deps",
           "chromium"
         ]
-      },
+      }
+    ],
+    "test": [
       {
         "argv": [
           "uv",
