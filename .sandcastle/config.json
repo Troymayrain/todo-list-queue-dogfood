@@ -6,6 +6,8 @@
         "argv": [
           "uv",
           "run",
+          "--with",
+          "playwright",
           "playwright",
           "install",
           "--with-deps",

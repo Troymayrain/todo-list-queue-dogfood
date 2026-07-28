@@ -1,3 +1,4 @@
 .idea/
 .env.local
+.sandcastle/tool/node_modules/
 sandcastle-queue.init.json
