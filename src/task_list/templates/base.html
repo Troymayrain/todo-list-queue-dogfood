@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Task List{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/app.css') }}">
+    <script src="{{ url_for('static', path='/htmx.min.js') }}" defer></script>
+  </head>
+  <body class="min-h-screen bg-slate-100 text-slate-950 antialiased">
+    <main class="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 sm:py-16">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

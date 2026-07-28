@@ -1,0 +1,23 @@
+<form id="task-form" method="post" action="/tasks" hx-post="/tasks" hx-target="#task-list" hx-swap="innerHTML" hx-on::after-request="if(event.detail.successful) this.reset()" class="mt-4" novalidate>
+  <label for="task-title" class="block text-sm font-medium text-slate-800">Task Title</label>
+  <div class="mt-2 flex flex-col gap-3 sm:flex-row">
+    <input
+      id="task-title"
+      name="title"
+      type="text"
+      maxlength="201"
+      value="{{ title_value }}"
+      aria-describedby="task-title-hint{% if error %} task-title-error{% endif %}"
+      {% if error %}aria-invalid="true"{% endif %}
+      class="min-h-11 w-full rounded-lg border px-3 py-2 text-base shadow-sm outline-none transition focus-visible:border-blue-600 focus-visible:ring-4 focus-visible:ring-blue-100 {% if error %}border-red-600{% else %}border-slate-300{% endif %}"
+      autofocus
+    >
+    <button type="submit" class="min-h-11 shrink-0 rounded-lg bg-blue-700 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300">
+      Add Task
+    </button>
+  </div>
+  <p id="task-title-hint" class="mt-2 text-sm text-slate-500">Up to 200 characters.</p>
+  {% if error %}
+    <p id="task-title-error" role="alert" class="mt-2 text-sm font-medium text-red-700">{{ error }}</p>
+  {% endif %}
+</form>
