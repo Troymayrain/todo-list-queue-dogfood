@@ -1,0 +1,15 @@
+<li id="task-{{ task.id }}" data-task-id="{{ task.id }}" class="rounded-xl bg-white px-5 py-4 text-base font-medium shadow-sm ring-1 ring-slate-200">
+  <div class="flex items-center justify-between gap-4">
+    <span data-task-title>{{ task.title }}</span>
+    <button
+      id="task-title-{{ task.id }}"
+      type="button"
+      hx-get="/tasks/{{ task.id }}/edit"
+      hx-target="#task-{{ task.id }}"
+      hx-swap="outerHTML"
+      aria-label="Edit {{ task.title }}"
+      {% if focus_edit %}autofocus{% endif %}
+      class="min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+    >Edit</button>
+  </div>
+</li>

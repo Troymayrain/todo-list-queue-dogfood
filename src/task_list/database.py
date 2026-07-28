@@ -41,6 +41,13 @@ def list_tasks() -> list[sqlite3.Row]:
         )
 
 
+def get_task(task_id: int) -> sqlite3.Row | None:
+    with connect() as connection:
+        return connection.execute(
+            "SELECT id, title, created_at FROM tasks WHERE id = ?", (task_id,)
+        ).fetchone()
+
+
 def create_task(title: str) -> sqlite3.Row:
     with connect() as connection:
         cursor = connection.execute(
@@ -53,3 +60,15 @@ def create_task(title: str) -> sqlite3.Row:
         ).fetchone()
         assert task is not None
         return task
+
+
+def update_task_title(task_id: int, title: str) -> sqlite3.Row | None:
+    with connect() as connection:
+        cursor = connection.execute(
+            "UPDATE tasks SET title = ? WHERE id = ?", (title, task_id)
+        )
+        if cursor.rowcount == 0:
+            return None
+        return connection.execute(
+            "SELECT id, title, created_at FROM tasks WHERE id = ?", (task_id,)
+        ).fetchone()

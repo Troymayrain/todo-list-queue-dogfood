@@ -5,7 +5,7 @@ from playwright.sync_api import Page, expect
 
 
 def task_titles(page: Page):
-    return page.locator("#task-list li")
+    return page.locator("#task-list [data-task-title]")
 
 
 def test_task_list_complete_browser_path(page: Page, app_server: str, tmp_path: Path) -> None:
