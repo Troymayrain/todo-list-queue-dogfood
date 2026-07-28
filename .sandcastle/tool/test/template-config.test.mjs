@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("Playwright bootstrap declares its CLI provider", async () => {
+test("Playwright browser installation uses the project-pinned CLI before pytest", async () => {
   const config = JSON.parse(
     await readFile(new URL("../../config.json", import.meta.url), "utf8"),
   );
@@ -13,10 +13,17 @@ test("Playwright bootstrap declares its CLI provider", async () => {
     "--with",
     "playwright",
     "playwright",
-    "install",
-    "--with-deps",
+    "install-deps",
     "chromium",
   ]);
+  assert.deepEqual(config.commands.test[0].argv, [
+    "uv",
+    "run",
+    "playwright",
+    "install",
+    "chromium",
+  ]);
+  assert.deepEqual(config.commands.test[1].argv, ["uv", "run", "pytest"]);
 });
 
 test("Ticket Agent must run the configured Host checks before committing", async () => {

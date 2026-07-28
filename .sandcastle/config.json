@@ -8,13 +8,21 @@
           "--with",
           "playwright",
           "playwright",
-          "install",
-          "--with-deps",
+          "install-deps",
           "chromium"
         ]
       }
     ],
     "test": [
+      {
+        "argv": [
+          "uv",
+          "run",
+          "playwright",
+          "install",
+          "chromium"
+        ]
+      },
       {
         "argv": [
           "uv",
