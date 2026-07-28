@@ -11,7 +11,15 @@
   </ol>
 {% else %}
   <div class="rounded-2xl border-2 border-dashed border-slate-300 px-5 py-10 text-center">
-    <p class="text-lg font-semibold">Your Task List is empty</p>
-    <p class="mt-2 text-slate-600">Create your first Task using the form above.</p>
+    {% if current_filter == "active" %}
+      <p class="text-lg font-semibold">No Active Tasks</p>
+      <p class="mt-2 text-slate-600">Completed Tasks are still available in All or Completed.</p>
+    {% elif current_filter == "completed" %}
+      <p class="text-lg font-semibold">No Completed Tasks</p>
+      <p class="mt-2 text-slate-600">Tasks you complete will appear here.</p>
+    {% else %}
+      <p class="text-lg font-semibold">Your Task List is empty</p>
+      <p class="mt-2 text-slate-600">Create your first Task using the form above.</p>
+    {% endif %}
   </div>
 {% endif %}

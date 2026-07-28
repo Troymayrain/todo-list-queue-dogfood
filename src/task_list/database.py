@@ -28,23 +28,37 @@ def connect() -> Iterator[sqlite3.Connection]:
 
 def migrate() -> None:
     with connect() as connection:
-        for migration in sorted(MIGRATIONS_PATH.glob("*.sql")):
-            connection.executescript(migration.read_text())
-
-
-def list_tasks() -> list[sqlite3.Row]:
-    with connect() as connection:
-        return list(
-            connection.execute(
-                "SELECT id, title, created_at FROM tasks ORDER BY created_at DESC, id DESC"
-            )
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY)"
         )
+        applied = {
+            row["name"]
+            for row in connection.execute("SELECT name FROM schema_migrations")
+        }
+        for migration in sorted(MIGRATIONS_PATH.glob("*.sql")):
+            if migration.name in applied:
+                continue
+            connection.executescript(migration.read_text())
+            connection.execute(
+                "INSERT INTO schema_migrations (name) VALUES (?)", (migration.name,)
+            )
+
+
+def list_tasks(status: str | None = None) -> list[sqlite3.Row]:
+    query = "SELECT id, title, created_at, status FROM tasks"
+    parameters: tuple[str, ...] = ()
+    if status is not None:
+        query += " WHERE status = ?"
+        parameters = (status,)
+    query += " ORDER BY created_at DESC, id DESC"
+    with connect() as connection:
+        return list(connection.execute(query, parameters))
 
 
 def get_task(task_id: int) -> sqlite3.Row | None:
     with connect() as connection:
         return connection.execute(
-            "SELECT id, title, created_at FROM tasks WHERE id = ?", (task_id,)
+            "SELECT id, title, created_at, status FROM tasks WHERE id = ?", (task_id,)
         ).fetchone()
 
 
@@ -56,7 +70,8 @@ def create_task(title: str) -> sqlite3.Row:
             (title,),
         )
         task = connection.execute(
-            "SELECT id, title, created_at FROM tasks WHERE id = ?", (cursor.lastrowid,)
+            "SELECT id, title, created_at, status FROM tasks WHERE id = ?",
+            (cursor.lastrowid,),
         ).fetchone()
         assert task is not None
         return task
@@ -70,5 +85,19 @@ def update_task_title(task_id: int, title: str) -> sqlite3.Row | None:
         if cursor.rowcount == 0:
             return None
         return connection.execute(
-            "SELECT id, title, created_at FROM tasks WHERE id = ?", (task_id,)
+            "SELECT id, title, created_at, status FROM tasks WHERE id = ?", (task_id,)
+        ).fetchone()
+
+
+def update_task_status(task_id: int, status: str) -> sqlite3.Row | None:
+    if status not in {"Active", "Completed"}:
+        raise ValueError("Unknown Task Status")
+    with connect() as connection:
+        cursor = connection.execute(
+            "UPDATE tasks SET status = ? WHERE id = ?", (status, task_id)
+        )
+        if cursor.rowcount == 0:
+            return None
+        return connection.execute(
+            "SELECT id, title, created_at, status FROM tasks WHERE id = ?", (task_id,)
         ).fetchone()

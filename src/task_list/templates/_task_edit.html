@@ -1,5 +1,6 @@
 <li id="task-{{ task.id }}" data-task-id="{{ task.id }}" class="rounded-xl bg-white px-5 py-4 text-base font-medium shadow-sm ring-2 ring-blue-500">
   <form method="post" action="/tasks/{{ task.id }}" hx-post="/tasks/{{ task.id }}" hx-target="#task-{{ task.id }}" hx-swap="outerHTML focus-scroll:#task-title-{{ task.id }}:focus" novalidate>
+    <input type="hidden" name="filter" value="{{ current_filter }}">
     <label for="task-title-{{ task.id }}" class="block text-sm font-medium text-slate-800">Task Title</label>
     <input
       id="task-title-{{ task.id }}"
@@ -19,8 +20,8 @@
     <div class="mt-3 flex flex-wrap gap-3">
       <button type="submit" class="min-h-11 rounded-lg bg-blue-700 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300">Save Task Title</button>
       <a
-        href="/tasks/{{ task.id }}"
-        hx-get="/tasks/{{ task.id }}"
+        href="/tasks/{{ task.id }}?filter={{ current_filter }}"
+        hx-get="/tasks/{{ task.id }}?filter={{ current_filter }}"
         hx-target="#task-{{ task.id }}"
         hx-swap="outerHTML focus-scroll:#task-title-{{ task.id }}:focus"
         onclick="event.preventDefault()"

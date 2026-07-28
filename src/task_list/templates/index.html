@@ -9,13 +9,15 @@
 
   <section aria-labelledby="create-heading" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7">
     <h2 id="create-heading" class="text-lg font-semibold">Create a Task</h2>
-    {% include "_form.html" %}
+    <div id="task-form-container">
+      {% include "_form.html" %}
+    </div>
   </section>
 
   <section aria-labelledby="tasks-heading" class="mt-8">
     <h2 id="tasks-heading" class="sr-only">Tasks</h2>
-    <div id="task-list" aria-live="polite">
-      {% include "_task_list.html" %}
+    <div id="task-view">
+      {% include "_task_view.html" %}
     </div>
   </section>
 {% endblock %}

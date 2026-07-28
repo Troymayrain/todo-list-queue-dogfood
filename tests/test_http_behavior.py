@@ -39,7 +39,7 @@ def test_htmx_success_returns_partial_and_validation_retargets_form(app_server: 
     invalid = post(app_server, "   ", htmx=True)
     body = invalid.read().decode()
     assert invalid.status == 200
-    assert invalid.headers["HX-Retarget"] == "#task-form"
-    assert invalid.headers["HX-Reswap"] == "outerHTML"
+    assert invalid.headers["HX-Retarget"] == "#task-form-container"
+    assert invalid.headers["HX-Reswap"] == "innerHTML"
     assert 'value="   "' in body
     assert "Enter a Task Title." in body
