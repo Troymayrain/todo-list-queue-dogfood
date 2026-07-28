@@ -101,3 +101,9 @@ def update_task_status(task_id: int, status: str) -> sqlite3.Row | None:
         return connection.execute(
             "SELECT id, title, created_at, status FROM tasks WHERE id = ?", (task_id,)
         ).fetchone()
+
+
+def delete_task(task_id: int) -> bool:
+    with connect() as connection:
+        cursor = connection.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        return cursor.rowcount > 0

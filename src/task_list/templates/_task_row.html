@@ -15,6 +15,15 @@
         {% if focus_edit %}autofocus{% endif %}
         class="min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
       >Edit</button>
+      <a
+        href="/tasks/{{ task.id }}/delete{% if current_filter != 'all' %}?filter={{ current_filter }}{% endif %}"
+        hx-get="/tasks/{{ task.id }}/delete{% if current_filter != 'all' %}?filter={{ current_filter }}{% endif %}"
+        hx-target="#task-{{ task.id }}"
+        hx-swap="outerHTML"
+        aria-label="Delete {{ task.title }}"
+        {% if focus_delete %}autofocus{% endif %}
+        class="min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+      >Delete</a>
       <form method="post" action="/tasks/{{ task.id }}/status" hx-post="/tasks/{{ task.id }}/status" hx-target="#task-list" hx-swap="innerHTML">
         <input type="hidden" name="filter" value="{{ current_filter }}">
         {% if task.status == "Active" %}

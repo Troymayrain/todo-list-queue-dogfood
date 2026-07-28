@@ -50,6 +50,7 @@ def test_save_edit_trims_persists_and_preserves_order(page: Page) -> None:
 
     page.get_by_role("button", name="Edit First Task").click()
     title_input = edit_title(page)
+    expect(title_input).to_be_focused()
     title_input.fill("   Renamed First Task   ")
     title_input.press("Enter")
 
@@ -63,6 +64,7 @@ def test_edit_validation_preserves_input_and_does_not_save(page: Page) -> None:
     add_task(page, "Original Task")
     page.get_by_role("button", name="Edit Original Task").click()
     title_input = edit_title(page)
+    expect(title_input).to_be_focused()
 
     title_input.fill("   ")
     title_input.press("Enter")
@@ -90,6 +92,7 @@ def test_missing_task_during_edit_recovers_to_current_list(
     add_task(page, "Task that remains")
     page.get_by_role("button", name="Edit Task to remove").click()
     title_input = edit_title(page)
+    expect(title_input).to_be_focused()
 
     with sqlite3.connect(tmp_path / "tasks.sqlite3") as connection:
         connection.execute("DELETE FROM tasks WHERE title = ?", ("Task to remove",))

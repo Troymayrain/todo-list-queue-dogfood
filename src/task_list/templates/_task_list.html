@@ -6,7 +6,11 @@
 {% if tasks %}
   <ol class="space-y-3">
     {% for task in tasks %}
-      {% include "_task_row.html" %}
+      {% if delete_task and delete_task.id == task.id %}
+        {% include "_task_delete.html" %}
+      {% else %}
+        {% include "_task_row.html" %}
+      {% endif %}
     {% endfor %}
   </ol>
 {% else %}

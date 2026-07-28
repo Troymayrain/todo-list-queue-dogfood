@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from task_list.database import (
     create_task,
+    delete_task,
     get_task,
     list_tasks,
     migrate,
@@ -73,21 +74,41 @@ def render_task_list(
 
 
 def render_task_row(
-    request: Request, task, *, task_filter: str = "all", focus_edit: bool = False
+    request: Request,
+    task,
+    *,
+    task_filter: str = "all",
+    focus_edit: bool = False,
+    focus_delete: bool = False,
 ) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "_task_row.html",
-        {"task": task, "current_filter": normalize_filter(task_filter), "focus_edit": focus_edit},
+        {
+            "task": task,
+            "current_filter": normalize_filter(task_filter),
+            "focus_edit": focus_edit,
+            "focus_delete": focus_delete,
+        },
     )
 
 
 def render_missing_task(request: Request, task_filter: str = "all") -> HTMLResponse:
-    return render_task_list(
+    notice = "That Task no longer exists. The current Task List is shown below."
+    if is_htmx(request):
+        return render_task_list(request, task_filter=task_filter, notice=notice)
+    task_filter = normalize_filter(task_filter)
+    return templates.TemplateResponse(
         request,
-        task_filter=task_filter,
-        status_code=200 if is_htmx(request) else 404,
-        notice="That Task no longer exists. The current Task List is shown below.",
+        "index.html",
+        {
+            "tasks": filtered_tasks(task_filter),
+            "current_filter": task_filter,
+            "title_value": "",
+            "error": None,
+            "notice": notice,
+        },
+        status_code=404,
     )
 
 
@@ -161,12 +182,64 @@ def edit_task(request: Request, task_id: int, filter: str = "all") -> HTMLRespon
 
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
-def cancel_task_edit(request: Request, task_id: int, filter: str = "all") -> HTMLResponse:
+def restore_task_row(
+    request: Request,
+    task_id: int,
+    filter: str = "all",
+    focus: str = "edit",
+) -> HTMLResponse:
     task_filter = normalize_filter(filter)
     task = get_task(task_id)
     if task is None:
         return render_missing_task(request, task_filter)
-    return render_task_row(request, task, task_filter=task_filter, focus_edit=True)
+    return render_task_row(
+        request,
+        task,
+        task_filter=task_filter,
+        focus_edit=focus != "delete",
+        focus_delete=focus == "delete",
+    )
+
+
+@app.get("/tasks/{task_id}/delete", response_class=HTMLResponse)
+def confirm_task_delete(request: Request, task_id: int, filter: str = "all") -> HTMLResponse:
+    task_filter = normalize_filter(filter)
+    task = get_task(task_id)
+    if task is None:
+        return render_missing_task(request, task_filter)
+    if not is_htmx(request):
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {
+                "tasks": filtered_tasks(task_filter),
+                "current_filter": task_filter,
+                "title_value": "",
+                "error": None,
+                "delete_task": task,
+            },
+        )
+    response = templates.TemplateResponse(
+        request,
+        "_task_delete.html",
+        {"task": task, "current_filter": task_filter},
+    )
+    response.headers["HX-Push-Url"] = filter_url(task_filter)
+    return response
+
+
+@app.post("/tasks/{task_id}/delete", response_class=HTMLResponse)
+def remove_task(
+    request: Request,
+    task_id: int,
+    filter: str = Form("all"),
+):
+    task_filter = normalize_filter(filter)
+    if not delete_task(task_id):
+        return render_missing_task(request, task_filter)
+    if is_htmx(request):
+        return render_task_list(request, task_filter=task_filter)
+    return RedirectResponse(url=filter_url(task_filter), status_code=303)
 
 
 @app.post("/tasks/{task_id}", response_class=HTMLResponse)
