@@ -3,3 +3,12 @@
 .sandcastle/tool/node_modules/
 .sandcastle/tool/dist/
 sandcastle-queue.init.json
+
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+node_modules/
+test-results/
+*.sqlite3

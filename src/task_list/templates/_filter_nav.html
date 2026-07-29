@@ -1,0 +1,13 @@
+<nav id="task-filters" aria-label="Filter Tasks" class="mb-4 flex gap-2">
+  {% for value, label in (("all", "All"), ("active", "Active"), ("completed", "Completed")) %}
+    <a
+      href="/{% if value != 'all' %}?filter={{ value }}{% endif %}"
+      hx-get="/{% if value != 'all' %}?filter={{ value }}{% endif %}"
+      hx-target="#task-view"
+      hx-swap="innerHTML"
+      hx-push-url="true"
+      {% if current_filter == value %}aria-current="page"{% if focus_filter %} autofocus{% endif %}{% endif %}
+      class="min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 {% if current_filter == value %}bg-blue-700 text-white{% else %}bg-white text-blue-700 ring-1 ring-slate-200 hover:bg-blue-50{% endif %}"
+    >{{ label }}</a>
+  {% endfor %}
+</nav>

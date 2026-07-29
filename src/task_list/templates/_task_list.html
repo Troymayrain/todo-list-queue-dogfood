@@ -1,0 +1,31 @@
+{% if notice %}
+  <div role="alert" tabindex="-1" autofocus class="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200">
+    {{ notice }}
+  </div>
+{% endif %}
+{% if tasks %}
+  <ol {% if focus_list %}tabindex="-1" autofocus aria-label="Updated Task List"{% endif %} data-task-list-status class="space-y-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">
+    {% for task in tasks %}
+      {% if delete_task and delete_task.id == task.id %}
+        {% include "_task_delete.html" %}
+      {% elif edit_task and edit_task.id == task.id %}
+        {% include "_task_edit.html" %}
+      {% else %}
+        {% include "_task_row.html" %}
+      {% endif %}
+    {% endfor %}
+  </ol>
+{% else %}
+  <div {% if focus_list %}tabindex="-1" autofocus{% endif %} data-task-list-status class="rounded-2xl border-2 border-dashed border-slate-300 px-5 py-10 text-center focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">
+    {% if current_filter == "active" %}
+      <p class="text-lg font-semibold">No Active Tasks</p>
+      <p class="mt-2 text-slate-600">Completed Tasks are still available in All or Completed.</p>
+    {% elif current_filter == "completed" %}
+      <p class="text-lg font-semibold">No Completed Tasks</p>
+      <p class="mt-2 text-slate-600">Tasks you complete will appear here.</p>
+    {% else %}
+      <p class="text-lg font-semibold">Your Task List is empty</p>
+      <p class="mt-2 text-slate-600">Create your first Task using the form above.</p>
+    {% endif %}
+  </div>
+{% endif %}

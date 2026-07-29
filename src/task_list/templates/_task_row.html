@@ -1,0 +1,39 @@
+<li id="task-{{ task.id }}" data-task-id="{{ task.id }}" data-task-status="{{ task.status }}" class="rounded-xl bg-white px-5 py-4 text-base font-medium shadow-sm ring-1 ring-slate-200">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <span data-task-title class="{% if task.status == 'Completed' %}text-slate-600 line-through{% endif %}">{{ task.title }}</span>
+      <span class="ml-2 text-sm font-normal text-slate-500">{{ task.status }}</span>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a
+        id="task-title-{{ task.id }}"
+        href="/tasks/{{ task.id }}/edit{% if current_filter != 'all' %}?filter={{ current_filter }}{% endif %}"
+        hx-get="/tasks/{{ task.id }}/edit{% if current_filter != 'all' %}?filter={{ current_filter }}{% endif %}"
+        hx-target="#task-{{ task.id }}"
+        hx-swap="outerHTML"
+        aria-label="Edit {{ task.title }}"
+        {% if focus_edit|default(false) %}autofocus{% endif %}
+        class="min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+      >Edit</a>
+      <a
+        href="/tasks/{{ task.id }}/delete{% if current_filter != 'all' %}?filter={{ current_filter }}{% endif %}"
+        hx-get="/tasks/{{ task.id }}/delete{% if current_filter != 'all' %}?filter={{ current_filter }}{% endif %}"
+        hx-target="#task-{{ task.id }}"
+        hx-swap="outerHTML"
+        aria-label="Delete {{ task.title }}"
+        {% if focus_delete|default(false) or focus_delete_task_id|default(none) == task.id %}autofocus{% endif %}
+        class="min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+      >Delete</a>
+      <form method="post" action="/tasks/{{ task.id }}/status" hx-post="/tasks/{{ task.id }}/status" hx-target="#task-list" hx-swap="innerHTML">
+        <input type="hidden" name="filter" value="{{ current_filter }}">
+        {% if task.status == "Active" %}
+          <input type="hidden" name="status" value="Completed">
+          <button type="submit" aria-label="Mark {{ task.title }} as Completed" {% if focus_status_task_id|default(none) == task.id %}autofocus{% endif %} class="min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300">Complete</button>
+        {% else %}
+          <input type="hidden" name="status" value="Active">
+          <button type="submit" aria-label="Restore {{ task.title }} to Active" {% if focus_status_task_id|default(none) == task.id %}autofocus{% endif %} class="min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300">Restore</button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+</li>
