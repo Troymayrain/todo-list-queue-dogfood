@@ -330,11 +330,25 @@ def save_task_status(
 ):
     task_filter = normalize_filter(filter)
     if status not in {"Active", "Completed"}:
-        return render_task_list(
+        notice = "Choose a valid Task Status."
+        if is_htmx(request):
+            return render_task_list(
+                request,
+                task_filter=task_filter,
+                status_code=422,
+                notice=notice,
+            )
+        return templates.TemplateResponse(
             request,
-            task_filter=task_filter,
+            "index.html",
+            {
+                "tasks": filtered_tasks(task_filter),
+                "current_filter": task_filter,
+                "title_value": "",
+                "error": None,
+                "notice": notice,
+            },
             status_code=422,
-            notice="Choose a valid Task Status.",
         )
     task = update_task_status(task_id, status)
     if task is None:

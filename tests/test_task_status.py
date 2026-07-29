@@ -118,3 +118,32 @@ def test_standard_status_form_preserves_filter_without_htmx(page: Page) -> None:
         body = response.read().decode()
     assert "Standard Status Task" in body
     assert "Restore Standard Status Task to Active" in body
+
+
+def test_invalid_status_uses_full_page_without_htmx(
+    page: Page, app_server: str
+) -> None:
+    add_task(page, "Task with invalid status")
+    task_id = page.locator("[data-task-id]").first.get_attribute("data-task-id")
+    assert task_id is not None
+
+    endpoint = f"{app_server}/tasks/{task_id}/status"
+    form = {"status": "invalid", "filter": "active"}
+
+    standard_response = page.request.post(endpoint, form=form)
+    assert standard_response.status == 422
+    standard_body = standard_response.text()
+    assert "<!doctype html>" in standard_body
+    assert "Task List" in standard_body
+    assert "Choose a valid Task Status." in standard_body
+    assert "Task with invalid status" in standard_body
+
+    htmx_response = page.request.post(
+        endpoint,
+        form=form,
+        headers={"HX-Request": "true"},
+    )
+    assert htmx_response.status == 422
+    htmx_body = htmx_response.text()
+    assert "<!doctype html>" not in htmx_body
+    assert "Choose a valid Task Status." in htmx_body
